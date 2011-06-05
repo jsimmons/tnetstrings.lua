@@ -26,6 +26,9 @@ context('tnetstrings', function()
         test('null', function()
             assert_equal(tns.null(), tns.null)
             assert_equal(tns.parse('0:~'), tns.null)
+
+            -- null must have zero length
+            assert_nil(tns.parse('5:hello~'))
         end)
 
         test('blob', function()
