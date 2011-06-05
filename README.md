@@ -26,11 +26,13 @@ A sentinal used to represent the tns null value. We need this since nil in Lua
 is equivalent to no value whereas null is a tns value representing no value.
 
 
-`tns.parse(data)`
+`tns.parse(data, expected)`
 
-Parses a single tns value from the given data, and returns it followed by any
-remaining data. In case of parsing errors, it returns nil followed by an error
-message.
+Takes a data string and returns a single tns value from it. Any remaining data
+is also returned. In case of parsing errors, or if the expected type does not
+match the type found, then the function returns nil followed by an error
+message. For simplicities sake, the expected type is given as a tns string type
+code.
 
 
 `tns.list(tab, n)`

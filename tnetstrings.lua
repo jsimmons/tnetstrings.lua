@@ -94,16 +94,10 @@ local parsers = {
 
         local key, val, ext = nil, nil, blob
         repeat
-            key, ext = parse(ext)
+            key, ext = parse(ext, ',')
 
             if not key then
                 return nil, ext
-            end
-
-            -- We could probably do this better by passing an expected type to
-            -- the parse function. For now I don't see it worth the complexity.
-            if type(key) ~= 'string' then
-                return nil, 'dict keys must be strings'
             end
 
             if not ext then
@@ -123,9 +117,11 @@ local parsers = {
 }
 
 -- Takes a data string and returns a single tns value from it. Any remaining
--- data is also returned. In case of parsing errors, the function returns nil
--- followed by an error message.
-parse = function(data)
+-- data is also returned. In case of parsing errors, or if the expected type
+-- does not match the type found, then the function returns nil followed by an
+-- error message. For simplicities sake, the expected type is given as a tns
+-- string type code.
+parse = function(data, expected)
     assert(type(data) == 'string')
 
     -- Find the interesting points in the data.
@@ -150,6 +146,10 @@ parse = function(data)
 
     if len(blob_type) ~= 1 then
         return nil, 'could not find type code'
+    end
+
+    if expected and expected ~= blob_type then
+        return nil, 'type did not match expected'
     end
 
     local extra = sub(data, blob_end + 2)
