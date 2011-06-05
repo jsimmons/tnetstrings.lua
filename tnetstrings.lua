@@ -1,14 +1,18 @@
 --[[
     tnetstring implementation
 
+    Joshua Simmons
 --]]
 
 -- We don't have to local these since we're not using module, but we will
 -- anyway for performance' sake.
+local concat = table.concat
+local error = error
 local find = string.find
-local sub = string.sub
 local len = string.len
+local sub = string.sub
 local tonumber = tonumber
+local tostring = tostring
 local type = type
 
 -- Since nil can't be stored in a Lua table, we need a sentinal value to take
@@ -161,12 +165,120 @@ parse = function(data)
     return parser(blob, length, blob_type, extra)
 end
 
-local function dump()
+local list_mt = {
+    __tostring = function() return 'tns list' end;
+}
 
+-- Wrap up a table so it's treated as an array.
+local function list(tab, n)
+    if not n then
+        n = #tab
+    end
+
+    return setmetatable({data = tab, n = n}, list_mt)
+end
+
+local function insert(into, data)
+    local n = (into.n or 0) + 1
+    into[n] = data
+    into.n = n
+end
+
+-- We need access to the dump method from the dumpers so declare this here
+local dump
+
+local dumpers = {
+    ['string'] = function(str, target)
+        local length = len(str)
+        insert(target, tostring(length))
+        insert(target, ':')
+        insert(target, str)
+        insert(target, ',')
+    end;
+
+    ['number'] = function(num, target)
+        local str = tostring(num)
+        local length = len(str)
+        insert(target, tostring(length))
+        insert(target, ':')
+        insert(target, str)
+        insert(target, '#')
+    end;
+
+    ['function'] = function(f, target)
+        if f == null then
+            insert(target, '0:~')
+        else
+            error('cannot encode functions')
+        end
+    end;
+
+    ['boolean'] = function(b, target)
+        if b then
+            insert(target, '4:true!')
+        else
+            insert(target, '5:false!')
+        end
+    end;
+
+    ['table'] = function(tab, target)
+        local payload = {}
+        if tostring(tab) == 'tns list' then
+            -- list
+            local n, data = tab.n, tab.data
+            for i = 1, n do
+                insert(payload, dump(data[i]))
+            end
+            
+            -- be a little bit tricky and append the type char here, remember
+            -- to take one away from the payload length!
+            insert(payload, ']')
+        else
+            -- dict
+            for k, v in pairs(tab) do
+                if type(k) ~= 'string' then
+                    error('dict keys must be strings')
+                end
+
+                insert(payload, dump(k))
+                insert(payload, dump(v))
+            end
+
+            -- same issue as list
+            insert(payload, '}')
+        end
+
+        local payload_str = concat(payload, '')
+
+        -- We have to take one away because we added the type char to the end
+        local payload_len = len(payload_str) - 1
+
+        insert(target, tostring(payload_len))
+        insert(target, ':')
+        insert(target, payload_str)
+    end;
+}
+
+-- Takes a Lua object and returns a tnetstring representation of it.
+-- Unlike the decode method, this aborts with an error if you feed it bad data.
+dump = function(object)
+    local output = {}
+
+    local t = type(object)
+    local dumper = dumpers[t]
+
+    if not dumper then
+        error('unable to dump type ' .. t, 2)
+    end
+
+    dumper(object, output)
+
+    return concat(output, '')
 end
 
 return {
     parse = parse;
+    list = list;
     dump = dump;
     null = null;
 }

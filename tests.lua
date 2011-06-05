@@ -3,7 +3,7 @@ local tns = require 'tnetstrings'
 
 context('tnetstrings', function()
     context('parse', function()
-        test('general failure modes', function()
+        test('general failure', function()
             -- no length
             assert_nil(tns.parse(':hello,'))
 
@@ -66,5 +66,70 @@ context('tnetstrings', function()
     end)
 
     context('dump', function()
+        test('general failure', function()
+            assert_error(function() tns.dump(function() end) end)
+            assert_error(function() tns.dump(nil) end)
+
+            -- A handy userdata is the file object :D
+            assert_error(function() tns.dump(io.stdout) end)
+
+            -- Must use string keys
+            assert_error(function() tns.dump({'hello'}) end)
+        end)
+
+        test('blob', function()
+            assert_equal(tns.dump('hello'), '5:hello,')
+        end)
+
+        test('number', function()
+            assert_equal(tns.dump(9000), '4:9000#')
+        end)
+
+        test('boolean', function()
+            assert_equal(tns.dump(true), '4:true!')
+            assert_equal(tns.dump(false), '5:false!')
+        end)
+
+        test('null', function()
+            assert_equal(tns.dump(tns.null), '0:~')
+        end)
+
+        test('list', function()
+            assert_equal(tns.dump(tns.list({'hello', 'world'})), '16:5:hello,5:world,]')
+        end)
+
+        test('dict', function()
+            assert_equal(tns.dump({hello = 'world'}), '16:5:hello,5:world,}')
+        end)
+    end)
+
+    context('sanity', function()
+        test('boolean', function()
+            assert_equal(tns.parse(tns.dump(true)), true)
+            assert_equal(tns.parse(tns.dump(false)), false)
+        end)
+
+        test('blob', function()
+            assert_equal(tns.parse(tns.dump('hello')), 'hello')
+        end)
+
+        test('number', function()
+            assert_equal(tns.parse(tns.dump(9000)), 9000)
+        end)
+
+        test('null', function()
+            assert_equal(tns.parse(tns.dump(tns.null)), tns.null)
+        end)
+
+        test('list', function()
+            local res = tns.parse(tns.dump(tns.list({'hello', 'world'}))) 
+            assert_equal(res[1], 'hello')
+            assert_equal(res[2], 'world')
+        end)
+
+        test('dict', function()
+            local res = tns.parse(tns.dump({hello = 'world'}))
+            assert_equal(res.hello, 'world')
+        end)
     end)
 end)
