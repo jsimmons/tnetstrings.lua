@@ -11,17 +11,29 @@ Easiest method is to use luarocks and the provided rockspec.
 
 Once we get dump implemented I'll do a versioned release.
 
-Usage
------
+Getting it into your codes
+--------------------------
 
-`local tns = require 'tnetstrings'`
-Note you must store the return value of require, we don't put anything in the global environment.
+    -- Note that you *must* store the return value of require, we don't put
+    -- anything in the global environment.
+    local tns = require 'tnetstrings'
 
-`tns.null`
-Is a sentinal value used to represent tns null. Since nil in a lua table is equivalent to no value, using a sentinal is the only way to properly encode null.
+API
+---
 
-`tns.parse(data)`
-Takes the data and returns a single tns value plus any left over data or nil plus an error message.
+_`tns.null`_
 
-`tns.dump(object)`
-Has not been implmented yet!
+A sentinal used to represent the tns null value. We need this since nil in Lua
+is equivalent to no value whereas null is a tns value representing no value.
+
+
+_`tns.parse(data)`_
+
+Parses a single tns value from the given data, and returns it followed by any
+remaining data. In case of parsing errors, it returns nil followed by an error
+message.
+
+_`tns.dump(value)`_
+
+Well I'm writing this instead of implementing it. So at the moment it does
+absolutely nothing.
