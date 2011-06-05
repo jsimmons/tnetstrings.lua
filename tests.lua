@@ -32,7 +32,7 @@ context('tnetstrings', function()
             assert_equal(tns.parse('5:Hello,'), 'Hello')
         end)
 
-        test('integer', function()
+        test('number', function()
             assert_equal(tns.parse('5:12345#'), 12345)
 
             local res = tns.parse('5:hello#')
@@ -46,6 +46,14 @@ context('tnetstrings', function()
             assert_nil(tns.parse('5:hello!'))
         end)
 
+        test('list', function()
+            local result = tns.parse('16:5:hello,5:world,]')
+            assert_equal(result[1], 'hello')
+            assert_equal(result[2], 'world')
+
+            assert_empty(tns.parse('0:]'))
+        end)
+
         test('dict', function()
             local result = tns.parse('16:5:hello,5:world,}')
             assert_equal(result['hello'], 'world')
@@ -54,14 +62,6 @@ context('tnetstrings', function()
 
             assert_nil(tns.parse('8:5:hello,}'))
             assert_nil(tns.parse('8:5:12345#}'))
-        end)
-
-        test('list', function()
-            local result = tns.parse('16:5:hello,5:world,]')
-            assert_equal(result[1], 'hello')
-            assert_equal(result[2], 'world')
-
-            assert_empty(tns.parse('0:]'))
         end)
     end)
 
@@ -77,6 +77,10 @@ context('tnetstrings', function()
             assert_error(function() tns.dump({'hello'}) end)
         end)
 
+        test('null', function()
+            assert_equal(tns.dump(tns.null), '0:~')
+        end)
+
         test('blob', function()
             assert_equal(tns.dump('hello'), '5:hello,')
         end)
@@ -90,10 +94,6 @@ context('tnetstrings', function()
             assert_equal(tns.dump(false), '5:false!')
         end)
 
-        test('null', function()
-            assert_equal(tns.dump(tns.null), '0:~')
-        end)
-
         test('list', function()
             assert_equal(tns.dump(tns.list({'hello', 'world'})), '16:5:hello,5:world,]')
         end)
@@ -104,9 +104,8 @@ context('tnetstrings', function()
     end)
 
     context('sanity', function()
-        test('boolean', function()
-            assert_equal(tns.parse(tns.dump(true)), true)
-            assert_equal(tns.parse(tns.dump(false)), false)
+        test('null', function()
+            assert_equal(tns.parse(tns.dump(tns.null)), tns.null)
         end)
 
         test('blob', function()
@@ -117,8 +116,9 @@ context('tnetstrings', function()
             assert_equal(tns.parse(tns.dump(9000)), 9000)
         end)
 
-        test('null', function()
-            assert_equal(tns.parse(tns.dump(tns.null)), tns.null)
+        test('boolean', function()
+            assert_equal(tns.parse(tns.dump(true)), true)
+            assert_equal(tns.parse(tns.dump(false)), false)
         end)
 
         test('list', function()
