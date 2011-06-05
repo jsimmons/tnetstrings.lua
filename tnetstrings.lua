@@ -21,10 +21,12 @@ end
 local parse
 
 local parsers = {
+    -- Blob, plain ol data.
     [','] = function(blob, blob_length, blob_type, extra)
         return blob, extra
     end;
 
+    -- Number, well, integer, but we're going to use lua's tonumber anyway.
     ['#'] = function(blob, blob_length, blob_type, extra)
         local n = tonumber(blob)
         if not n then
@@ -33,6 +35,8 @@ local parsers = {
         return n, extra
     end;
 
+    -- Boolean, we check the text even though it's not strictly necessary for
+    -- a reasonable implementation.
     ['!'] = function(blob, blob_length, blob_type, extra)
         if blob == 'true' then
             return true, extra
@@ -43,10 +47,16 @@ local parsers = {
         end
     end;
 
+    -- Null, has to be 0 in length.
     ['~'] = function(blob, blob_length, blob_type, extra)
+        if blob_length ~= 0 then
+            return nil, 'null must have 0 length'
+        end
+
         return null, extra
     end;
     
+    -- List, we just put it in a table.
     [']'] = function(blob, blob_length, blob_type, extra)
         if blob_length == 0 then
             return {}
@@ -70,6 +80,7 @@ local parsers = {
         return result, extra
     end;
 
+    -- Dictionary, we just put it in a table too.
     ['}'] = function(blob, blob_length, blob_type, extra)
         if blob_length == 0 then
             return {}
@@ -84,9 +95,13 @@ local parsers = {
             if not key then
                 return nil, ext
             end
+
+            -- We could probably do this better by passing an expected type to
+            -- the parse function. For now I don't see it worth the complexity.
             if type(key) ~= 'string' then
                 return nil, 'dict keys must be strings'
             end
+
             if not ext then
                 return nil, 'unbalanced dict'
             end
@@ -103,7 +118,12 @@ local parsers = {
     end;
 }
 
+-- Takes a data string and returns a single tns value from it. Any remaining
+-- data is also returned. In case of parsing errors, the function returns nil
+-- followed by an error message.
 parse = function(data)
+    assert(type(data) == 'string')
+
     -- Find the interesting points in the data.
     local colon_pos = find(data, ':', 1, true)
     if not colon_pos then
@@ -123,6 +143,7 @@ parse = function(data)
     if len(blob) ~= length then
         return nil, 'invalid blob length'
     end
+
     if len(blob_type) ~= 1 then
         return nil, 'could not find type code'
     end
