@@ -7,7 +7,8 @@ Install Instructions
 --------------------
 
 Easiest method is to use luarocks and the provided rockspec.
-`sudo luarocks install https://github.com/jsimmons/tnetstrings.lua/raw/master/rockspecs/tnetstrings-scm-0.rockspec`
+
+    sudo luarocks install https://github.com/jsimmons/tnetstrings.lua/raw/master/rockspecs/tnetstrings-scm-0.rockspec
 
 Once we get dump implemented I'll do a versioned release.
 
