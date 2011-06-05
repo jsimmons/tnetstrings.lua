@@ -29,7 +29,7 @@ API
 
 `tns.null`
 
-A sentinal used to represent the tns null value. We need this since nil in Lua
+A sentinel used to represent the tns null value. We need this since nil in Lua
 is equivalent to no value whereas null is a tns value representing no value.
 
 

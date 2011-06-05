@@ -15,7 +15,7 @@ local tonumber = tonumber
 local tostring = tostring
 local type = type
 
--- Since nil can't be stored in a Lua table, we need a sentinal value to take
+-- Since nil can't be stored in a Lua table, we need a sentinel value to take
 -- its place.
 local function null()
     return null -- Trick stolen from Json4Lua, returns itself.
