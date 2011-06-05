@@ -73,7 +73,7 @@ local parsers = {
             val, ext = parse(ext)
 
             -- If val is nil, then ext is actually an error message.
-            if not val then
+            if val == nil then
                 return val, ext
             end
 
@@ -96,7 +96,7 @@ local parsers = {
         repeat
             key, ext = parse(ext, ',')
 
-            if not key then
+            if key == nil then
                 return nil, ext
             end
 
@@ -105,7 +105,7 @@ local parsers = {
             end
 
             local val, ext = parse(ext)
-            if not val then
+            if val == nil then
                 return nil, ext
             end
 
