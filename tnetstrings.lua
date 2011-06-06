@@ -123,8 +123,6 @@ local parsers = {
 -- error message. For simplicities sake, the expected type is given as a tns
 -- string type code.
 parse = function(data, expected, offset)
-    assert(type(data) == 'string')
-
     offset = offset or 1
 
     -- Find the interesting points in the data.
@@ -141,10 +139,6 @@ parse = function(data, expected, offset)
     local blob_begin = colon_pos + 1
     local blob_end = colon_pos + length
     local blob_type = sub(data, blob_end + 1, blob_end + 1)
-
-    if len(blob_type) ~= 1 then
-        return nil, 'could not find type code'
-    end
 
     if expected and expected ~= blob_type then
         return nil, 'type did not match expected'
@@ -168,66 +162,71 @@ end
 local dump
 
 local dumpers = {
-    ['string'] = function(str, target)
+    ['string'] = function(str, insert)
         local length = len(str)
-        insert(target, tostring(length))
-        insert(target, ':')
-        insert(target, str)
-        insert(target, ',')
+        insert(tostring(length))
+        insert(':' .. str .. ',')
     end;
 
-    ['number'] = function(num, target)
+    ['number'] = function(num, insert)
         local str = tostring(num)
         local length = len(str)
-        insert(target, tostring(length))
-        insert(target, ':')
-        insert(target, str)
-        insert(target, '#')
+        insert(tostring(length))
+        insert(':' .. str .. '#')
     end;
 
-    ['function'] = function(f, target)
+    ['function'] = function(f, insert)
         if f == null then
-            insert(target, '0:~')
+            insert('0:~')
         else
             error('cannot encode functions')
         end
     end;
 
-    ['boolean'] = function(b, target)
+    ['boolean'] = function(b, insert)
         if b then
-            insert(target, '4:true!')
+            insert('4:true!')
         else
-            insert(target, '5:false!')
+            insert('5:false!')
         end
     end;
 
     -- We treat any tables with an array part as arrays.
-    ['table'] = function(tab, target)
+    ['table'] = function(tab, insert)
         local payload = {}
-        -- We already know this is a table, so this is well defined.
-        local n = #tab
-        if n > 0 then
-            -- list
-            for i = 1, n do
-                insert(payload, dump(tab[i]))
+
+        do
+            local n = 1
+            local function insert(data)
+                payload[n] = data
+                n = n + 1
             end
-            
-            -- be a little bit tricky and append the type char here, remember
-            -- to take one away from the payload length!
-            insert(payload, ']')
-        else
-            -- dict
-            for k, v in pairs(tab) do
-                if type(k) ~= 'string' then
-                    error('dict keys must be strings')
+
+            -- We already know this is a table, so this is well defined.
+            local n = #tab
+            if n > 0 then
+                -- list
+                for i = 1, n do
+                    insert(dump(tab[i]))
                 end
 
-                insert(payload, dump(k))
-                insert(payload, dump(v))
-            end
+                -- be a little bit tricky and append the type char here, remember
+                -- to take one away from the payload length!
+                insert(']')
+            else
+                -- dict
+                for k, v in pairs(tab) do
+                    if type(k) ~= 'string' then
+                        error('dict keys must be strings')
+                    end
 
-            -- same issue as list
-            insert(payload, '}')
+                    insert(dump(k))
+                    insert(dump(v))
+                end
+
+                -- same issue as list
+                insert('}')
+            end
         end
 
         local payload_str = concat(payload, '')
@@ -235,17 +234,13 @@ local dumpers = {
         -- We have to take one away because we added the type char to the end
         local payload_len = len(payload_str) - 1
 
-        insert(target, tostring(payload_len))
-        insert(target, ':')
-        insert(target, payload_str)
+        insert(tostring(payload_len) .. ':' .. payload_str)
     end;
 }
 
 -- Takes a Lua object and returns a tnetstring representation of it.
 -- Unlike the decode method, this aborts with an error if you feed it bad data.
 dump = function(object)
-    local output = {}
-
     local t = type(object)
     local dumper = dumpers[t]
 
@@ -253,7 +248,10 @@ dump = function(object)
         error('unable to dump type ' .. t, 2)
     end
 
-    dumper(object, output)
+    local output = {}
+    local n = 1
+
+    dumper(object, function(data) output[n] = data n = n + 1 end)
 
     return concat(output, '')
 end
