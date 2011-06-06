@@ -26,22 +26,23 @@ local parse
 
 local parsers = {
     -- Blob, plain ol data.
-    [','] = function(blob, blob_length, blob_type, extra)
-        return blob, extra
+    [','] = function(data, offset, length)
+        return sub(data, offset, offset + length - 1)
     end;
 
     -- Number, well, integer, but we're going to use lua's tonumber anyway.
-    ['#'] = function(blob, blob_length, blob_type, extra)
-        local n = tonumber(blob)
+    ['#'] = function(data, offset, length)
+        local n = tonumber(sub(data, offset, offset + length - 1))
         if not n then
             return nil, 'could not parse number payload'
         end
-        return n, extra
+        return n
     end;
 
     -- Boolean, we check the text even though it's not strictly necessary for
     -- a reasonable implementation.
-    ['!'] = function(blob, blob_length, blob_type, extra)
+    ['!'] = function(data, offset, length)
+        local blob = sub(data, offset, offset + length - 1)
         if blob == 'true' then
             return true, extra
         elseif blob == 'false'
@@ -52,67 +53,67 @@ local parsers = {
     end;
 
     -- Null, has to be 0 in length.
-    ['~'] = function(blob, blob_length, blob_type, extra)
-        if blob_length ~= 0 then
+    ['~'] = function(data, offset, length)
+        if length ~= 0 then
             return nil, 'null must have 0 length'
         end
 
-        return null, extra
+        return null
     end;
     
     -- List, we just put it in a table.
-    [']'] = function(blob, blob_length, blob_type, extra)
-        if blob_length == 0 then
+    [']'] = function(data, offset, length)
+        if length == 0 then
             return {}
         end
 
         local result, n = {}, 1
 
-        local val, ext = nil, blob
+        local val, ext_pos = nil, offset
         repeat
-            val, ext = parse(ext)
+            val, ext_pos = parse(data, nil, ext_pos)
 
             -- If val is nil, then ext is actually an error message.
             if val == nil then
-                return val, ext
+                return val, ext_pos
             end
 
             result[n] = val
             n = n + 1
-        until not ext
+        until not ext_pos
 
-        return result, extra
+        return result
     end;
 
     -- Dictionary, we just put it in a table too.
-    ['}'] = function(blob, blob_length, blob_type, extra)
-        if blob_length == 0 then
+    ['}'] = function(data, offset, length)
+        if length == 0 then
             return {}
         end
         
         local result = {}
 
-        local key, val, ext = nil, nil, blob
+        local key, val, ext_pos = nil, nil, offset
         repeat
-            key, ext = parse(ext, ',')
+            key, ext_pos = parse(data, ',', ext_pos)
 
             if key == nil then
                 return nil, ext
             end
 
-            if not ext then
+            if not ext_pos then
                 return nil, 'unbalanced dict'
             end
 
-            local val, ext = parse(ext)
+            val, ext_pos = parse(data, nil, ext_pos)
             if val == nil then
                 return nil, ext
             end
 
             result[key] = val
-        until not ext
+        until not ext_pos
 
-        return result, extra
+        return result
     end;
 }
 
@@ -121,28 +122,25 @@ local parsers = {
 -- does not match the type found, then the function returns nil followed by an
 -- error message. For simplicities sake, the expected type is given as a tns
 -- string type code.
-parse = function(data, expected)
+parse = function(data, expected, offset)
     assert(type(data) == 'string')
 
+    offset = offset or 1
+
     -- Find the interesting points in the data.
-    local colon_pos = find(data, ':', 1, true)
+    local colon_pos = find(data, ':', offset, true)
     if not colon_pos then
         return nil, 'could not find colon'
     end
 
-    local length = tonumber(sub(data, 1, colon_pos - 1))
+    local length = tonumber(sub(data, offset, colon_pos - 1))
     if not length then
         return nil, 'no blob length found'
     end
 
     local blob_begin = colon_pos + 1
     local blob_end = colon_pos + length
-    local blob = sub(data, blob_begin, blob_end)
     local blob_type = sub(data, blob_end + 1, blob_end + 1)
-
-    if len(blob) ~= length then
-        return nil, 'invalid blob length'
-    end
 
     if len(blob_type) ~= 1 then
         return nil, 'could not find type code'
@@ -152,17 +150,19 @@ parse = function(data, expected)
         return nil, 'type did not match expected'
     end
 
-    local extra = sub(data, blob_end + 2)
-    if len(extra) == 0 then
-        extra = nil
-    end
-
     local parser = parsers[blob_type]
     if not parser then
         return nil, 'invalid type code'
     end
 
-    return parser(blob, length, blob_type, extra)
+    -- Make sure we set the index of the left overs to nil if we're at the end
+    -- of the data
+    local leftover_idx = blob_end + 2
+    if leftover_idx == len(data) then
+        leftover_idx = nil
+    end
+
+    return parser(data, blob_begin, length), leftover_idx
 end
 
 local function insert(into, data)
