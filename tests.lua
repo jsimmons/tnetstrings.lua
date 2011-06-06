@@ -77,7 +77,7 @@ context('tnetstrings', function()
             assert_error(function() tns.dump(io.stdout) end)
 
             -- Must use string keys
-            assert_error(function() tns.dump({'hello'}) end)
+            assert_error(function() tns.dump({[function()end] = 'hello'}) end)
         end)
 
         test('null', function()
@@ -98,7 +98,7 @@ context('tnetstrings', function()
         end)
 
         test('list', function()
-            assert_equal(tns.dump(tns.list({'hello', 'world'})), '16:5:hello,5:world,]')
+            assert_equal(tns.dump({'hello', 'world'}), '16:5:hello,5:world,]')
         end)
 
         test('dict', function()
@@ -125,7 +125,7 @@ context('tnetstrings', function()
         end)
 
         test('list', function()
-            local res = tns.parse(tns.dump(tns.list({'hello', 'world'}))) 
+            local res = tns.parse(tns.dump({'hello', 'world'})) 
             assert_equal(res[1], 'hello')
             assert_equal(res[2], 'world')
         end)

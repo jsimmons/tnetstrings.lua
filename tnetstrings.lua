@@ -165,19 +165,6 @@ parse = function(data, expected)
     return parser(blob, length, blob_type, extra)
 end
 
-local list_mt = {
-    __tostring = function() return 'tns list' end;
-}
-
--- Wrap up a table so it's treated as an array.
-local function list(tab, n)
-    if not n then
-        n = #tab
-    end
-
-    return setmetatable({data = tab, n = n}, list_mt)
-end
-
 local function insert(into, data)
     local n = (into.n or 0) + 1
     into[n] = data
@@ -221,13 +208,15 @@ local dumpers = {
         end
     end;
 
+    -- We treat any tables with an array part as arrays.
     ['table'] = function(tab, target)
         local payload = {}
-        if tostring(tab) == 'tns list' then
+        -- We already know this is a table, so this is well defined.
+        local n = #tab
+        if n > 0 then
             -- list
-            local n, data = tab.n, tab.data
             for i = 1, n do
-                insert(payload, dump(data[i]))
+                insert(payload, dump(tab[i]))
             end
             
             -- be a little bit tricky and append the type char here, remember
@@ -277,9 +266,8 @@ dump = function(object)
 end
 
 return {
-    parse = parse;
-    list = list;
-    dump = dump;
     null = null;
+    parse = parse;
+    dump = dump;
 }
 

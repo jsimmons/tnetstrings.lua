@@ -42,13 +42,6 @@ message. For simplicities sake, the expected type is given as a tns string type
 code.
 
 
-`tns.list(tab, n)`
-
-Tells dump to treat the given table as a list (array). n is an optional bound,
-otherwise we will use #. Note that since we don't implicitly convert nil to
-null, a table with holes will still not work even if you calculate n properly.
-
-
 `tns.dump(value)`
 
 Dumps the given value and returns its tns representation as a string. Unlike
@@ -58,7 +51,8 @@ Supported types are:
 * boolean
 * number
 * string
-* table
-* `tns.list`
+* table - If # is non-zero for your table it will be treated as an array. be
+  wary of tables with holes as usual. (especially since we will error in that
+  case, there is no automatic nil to null conversion)
 * `tns.null`
 
