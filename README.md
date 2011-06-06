@@ -35,9 +35,8 @@ is equivalent to no value whereas null is a tns value representing no value.
 
 `tns.parse(data, expected)`
 
-Takes a data string and returns a single tns value from it. If there is
-unconsumed data at the end of a pass, it returns the index of the first element
-of that unparsed data as well.
+Takes a data string and returns a single tns value from it as well as the index
+where it finished consuming data.
 
 In case of parsing errors, or if the expected type does not match the type
 found, then the function returns nil followed by an error message. For

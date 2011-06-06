@@ -54,12 +54,20 @@ context('tnetstrings', function()
             assert_equal(result[1], 'hello')
             assert_equal(result[2], 'world')
 
+            -- Deep nesting
+            result = tns.parse('56:5:hello,5:world,36:5:hello,5:world,16:5:hello,5:world,]]]')
+            assert_equal(result[3][3][2], 'world')
+
             assert_empty(tns.parse('0:]'))
         end)
 
         test('dict', function()
             local result = tns.parse('16:5:hello,5:world,}')
             assert_equal(result['hello'], 'world')
+
+            -- Deep nesting
+            result = tns.parse('40:5:hello,28:5:hello,16:5:hello,5:world,}}}')
+            assert_equal(result.hello.hello.hello, 'world')
 
             assert_empty(tns.parse('0:}'))
 
@@ -133,6 +141,10 @@ context('tnetstrings', function()
         test('dict', function()
             local res = tns.parse(tns.dump({hello = 'world'}))
             assert_equal(res.hello, 'world')
+
+            -- Deep nesting
+            res = tns.parse(tns.dump({hello = {hello = {hello = 'world'}}}))
+            assert_equal(res.hello.hello.hello, 'world')
         end)
     end)
 end)

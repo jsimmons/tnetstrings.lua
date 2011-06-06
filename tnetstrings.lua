@@ -80,7 +80,7 @@ local parsers = {
 
             result[n] = val
             n = n + 1
-        until not ext_pos
+        until ext_pos == (offset + length)
 
         return result
     end;
@@ -111,7 +111,7 @@ local parsers = {
             end
 
             result[key] = val
-        until not ext_pos
+        until ext_pos == (offset + length)
 
         return result
     end;
@@ -155,14 +155,7 @@ parse = function(data, expected, offset)
         return nil, 'invalid type code'
     end
 
-    -- Make sure we set the index of the left overs to nil if we're at the end
-    -- of the data
-    local leftover_idx = blob_end + 2
-    if leftover_idx == len(data) then
-        leftover_idx = nil
-    end
-
-    return parser(data, blob_begin, length), leftover_idx
+    return parser(data, blob_begin, length), blob_end + 2
 end
 
 local function insert(into, data)
