@@ -33,10 +33,11 @@ A sentinel used to represent the tns null value. We need this since nil in Lua
 is equivalent to no value whereas null is a tns value representing no value.
 
 
-`tns.parse(data, expected)`
+`tns.parse(data, [expected], [offset])`
 
 Takes a data string and returns a single tns value from it as well as the index
-where it finished consuming data.
+where it finished consuming data. Optionally using an offset into the data as a
+start position.
 
 In case of parsing errors, or if the expected type does not match the type
 found, then the function returns nil followed by an error message. For
