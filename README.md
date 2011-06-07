@@ -8,9 +8,9 @@ Install Instructions
 
 Easiest method is to use luarocks and the provided rockspec.
 
-For the latest stable release (1.0.0)
+For the latest stable release (1.1.0)
 
-    $ sudo luarocks install https://github.com/jsimmons/tnetstrings.lua/raw/master/rockspecs/tnetstrings-1.0.0-1.rockspec
+    $ sudo luarocks install https://github.com/jsimmons/tnetstrings.lua/raw/master/rockspecs/tnetstrings-1.1.0-1.rockspec
 
 For the latest from the repository.
 
