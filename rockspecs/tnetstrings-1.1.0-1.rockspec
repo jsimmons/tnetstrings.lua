@@ -2,7 +2,7 @@ package = 'tnetstrings'
 version = '1.1.0-1'
 
 source = {
-    url = 'https://github.com/downloads/jsimmons/tnetstrings.lua/tnetstrings-1.1.0.tar.bz2';
+    url = 'http://cloud.github.com/downloads/jsimmons/tnetstrings.lua/tnetstrings-1.1.0.tar.bz2';
 }
 
 description = {
