@@ -30,8 +30,20 @@ local parsers = {
         return sub(data, offset, offset + length - 1)
     end;
 
-    -- Number, well, integer, but we're going to use lua's tonumber anyway.
+    -- Integer, we're going to check the output of lua's tonumber.
     ['#'] = function(data, offset, length)
+        local n = tonumber(sub(data, offset, offset + length - 1))
+        if (n % 1 ~= 0) or (not n) then
+            -- n % 1 gives the part of n to the right of the decimal point
+            -- so (n % 1 ~= 0) tells whether n represents a floating-point number
+            return nil, 'could not parse number payload'
+        end
+        return n
+    end;
+
+    -- Float, we're going to use lua's tonumber, though technically we should
+    -- use a bignum library.
+    ['^'] = function(data, offset, length)
         local n = tonumber(sub(data, offset, offset + length - 1))
         if not n then
             return nil, 'could not parse number payload'
@@ -171,8 +183,10 @@ local dumpers = {
     ['number'] = function(num, insert)
         local str = tostring(num)
         local length = len(str)
+        local symbol = '#'
+        if num % 1 ~= 0 then symbol = '^' end
         insert(tostring(length))
-        insert(':' .. str .. '#')
+        insert(':' .. str .. symbol)
     end;
 
     ['function'] = function(f, insert)
